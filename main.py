@@ -1,14 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+import grid as g
 
-
-def generate_stairs():
-    
+grid = g.setup_grid()
 
 
 # Define the coordinates where you want to place cubes (x, y, z)
-coordinates = [(1, 2, 3), (4, 1, 2), (2, 4, 1)]
+coordinates = g.find_material(grid, 'stairs')
 
 # Define the size of the cubes and the color
 cube_size = 1

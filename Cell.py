@@ -4,11 +4,13 @@ class Cell:
     size = 0
     v = 0
     material = 0
+    coord = 0
 
-    def __init__(self, size, material='air'):
+    def __init__(self, size, coord, material='air'):
         self.size = size
         self.v = size**3
         self.material = material
+        self.coord = coord
     
     def calculate_erosion(self, force):
         if self.material == 'air': pass
