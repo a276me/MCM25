@@ -1,4 +1,6 @@
 
+
+
 class Cell:
 
     size = 0
@@ -15,7 +17,11 @@ class Cell:
     def calculate_erosion(self, force):
         if self.material == 'air': pass
         else:
-            pass
+            self.v -= force
+        
+            if self.v <= 0 and self.material == 'stairs':
+                self.v = 0
+                self.material = 'air'
 
     def change_material(self,mat):
         self.material = mat
