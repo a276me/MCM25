@@ -47,7 +47,7 @@ def replace_zeros_with_neighbors(matrix):
     return new_matrix
 
 
-file_path = 'stairs_data.txt'
+file_path = 'DataExtract/stairs_data.txt'
 data = read_matrix_from_txt(file_path)
 data = data[10:270]
 Data = replace_zeros_with_neighbors(data)
