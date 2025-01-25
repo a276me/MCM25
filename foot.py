@@ -48,7 +48,7 @@ def generate_foot(center=(0, 0), size=200, resolution=5):
 
 # Example usage
 resolution = 1  # Resolution of points
-size = 20     # Total length of the foot
+size = 27   # Total length of the foot
 center = (0, 0) # Center of the foot
 
 foot_points = generate_foot(center=center, size=size, resolution=resolution)
@@ -56,15 +56,53 @@ foot_points = generate_foot(center=center, size=size, resolution=resolution)
 # Extract x and y coordinates
 x_coords, y_coords = zip(*foot_points)
 
+filtered_points = [point for point in foot_points if 0 <= point[1] <= 30]
+
+custom_pressures = {
+    (23, 27): 129.00,
+    (20, 22): 114.67,
+    (16, 19): 78.28,
+    (13,15): 102.28,
+    (8,12): 118.85,
+    (5, 7): 88.17,
+    (2, 4 ): 43.60,
+    (1, 2): 0.00
+}
+
+filtered_points_with_pressure = []
+for point in filtered_points:
+    y = point[1]
+    pressure = None
+    for key, value in custom_pressures.items():
+        if isinstance(key, tuple) and key[0] <= y <= key[1]: 
+            pressure = value
+            break
+        elif isinstance(key, int) and y == key: 
+            pressure = value
+            break
+    if pressure is not None:
+        filtered_points_with_pressure.append({"x": point[0], "y": point[1], "pressure": pressure})
+
+# Extract x, y, and pressure coordinates for visualization
+filtered_x_coords = [p["x"] for p in filtered_points_with_pressure]
+filtered_y_coords = [p["y"] for p in filtered_points_with_pressure]
+pressures = [p["pressure"] for p in filtered_points_with_pressure]
+
 # Plot the points for visualization
-plt.figure(figsize=(6, 10))
-plt.scatter(x_coords, y_coords, s=10, color="blue")
+plt.figure(figsize=(8, 10))
+plt.scatter(filtered_x_coords, filtered_y_coords, s=10, color="blue", label="Points")
+
+# Annotate each point with its pressure value
+for p in filtered_points_with_pressure:
+    plt.text(p["x"] + 0.3, p["y"] + 0.3, f'{p["pressure"]:.2f}', fontsize=8, color="red")
+
 plt.axis("equal")
-plt.title("Foot Shape Filled with Points (Upright)")
+plt.title("Foot Shape with Custom Pressure Values (Top 10 Rows: Height 10 to 20)")
 plt.xlabel("X Coordinate")
 plt.ylabel("Y Coordinate")
+plt.legend()
 plt.show()
 
-# Output the list of coordinates
-print("Coordinates that fill the foot shape:")
-print(foot_points)
+# Output the filtered list of coordinates with pressure
+print("Filtered points with custom pressure values ")
+print(filtered_points)
