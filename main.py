@@ -108,7 +108,7 @@ def run_simulation(stair_dim, iterations, dt, direction, distribution, steps_per
 
 class ModelI:
 
-    def __init__(self, alpha=0.05, beta=0.1, stair_dim=(200, 50, 30), direction=1, distribution=mc.gaussian_2d, steps_per_dt=5, dt=1, **kwargs):
+    def __init__(self, alpha=1, beta=0.1, stair_dim=(200, 50, 30), direction=1, distribution=mc.gaussian_2d, steps_per_dt=5, dt=0.1, **kwargs):
         self.alpha = alpha
         self.beta = beta
         self.stair_width, self.stair_length, self.q = stair_dim
@@ -121,12 +121,15 @@ class ModelI:
 
     def update_grid(self,):
         force_map = np.zeros((self.Nx, self.Ny))
+        # print(force_map.shape)
+        # print(self.u.shape)
+        #print(laplacian(self.u, self.dx, self.dy).std())
         # force_map[:, self.stair_length:2*self.stair_length] = mc.monte_carlo(self.stair_width,
         #                                                      self.stair_length, self.steps_per_dt, self.direction, self.distribution)
-        force_map = mc.monte_carlo(self.stair_width,
-                                    self.stair_length, self.steps_per_dt, self.direction, self.distribution)
+        force_map[:,self.stair_length:2*self.stair_length] = mc.monte_carlo(self.Nx,
+                                    self.Ny, self.steps_per_dt, self.direction, self.distribution)
  
-        du = self.alpha * laplacian(self.u, self.dx, self.dy) - self.beta * force_map
+        du = (self.alpha * laplacian(self.u, self.dx, self.dy)*np.exp(-0.1*laplacian(self.u, self.dx, self.dy)**2)) - self.beta * force_map
 
         # du = -alpha * np.sqrt((derivatives(u)**2).sum()) - beta * force_map
 
@@ -148,16 +151,17 @@ class ModelI:
         # self.u[:, -1] = 3*self.q
 
 
-    def run_simulation(self, iterations, save_file='sim.npy'):
+    def run_simulation(self, iterations, save=False, save_file='./DiffEqSim/sim.npy'):
 
-        self.Lx, self.Ly = self.stair_width, self.stair_length # Domain size
+        self.Lx, self.Ly = self.stair_width, self.stair_length*3 # Domain size
         self.Nx, self.Ny = int(self.Lx), int(self.Ly) 
         self.u = np.zeros((self.Nx, self.Ny))
         Y, X = np.meshgrid( np.linspace(0, self.Ly, self.Ny), np.linspace(0, self.Lx, self.Nx),)
 
-        # for i in range(3): 
-        #     self.u[:,self.stair_length*i:self.stair_length*(i+1)] = self.q*i
+        for i in range(3): 
+            self.u[:,self.stair_length*i:self.stair_length*(i+1)] = self.q*i
 
+        
         self.saves = np.zeros(shape=(iterations, 3, self.u.shape[0], self.u.shape[1]))
         self.saves[:,1,:,:] = X
         self.saves[:,2,:,:] = Y
@@ -167,11 +171,9 @@ class ModelI:
             self.update_grid()
             print(f'simulated {i}/{iterations}')
         
-        print(self.saves.shape)
-        np.save(save_file, self.saves, allow_pickle=True)
+        #print(self.saves.shape)
+        if save: np.save(save_file, self.saves, allow_pickle=True)
         return self.saves
-
-
 
 
 if __name__ == '__main__':
