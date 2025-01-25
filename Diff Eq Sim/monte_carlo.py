@@ -47,7 +47,7 @@ def add_footprint_to_grid(grid, footprint, pressure):
             grid[y, x] += pressure
 
 def foot_angle(is_downward = True):
-    if not is_downward:
+    if is_downward:
         return np.random.uniform(0-45,0+45)
     return np.random.uniform(180-45,180+45)
 
@@ -73,35 +73,47 @@ def rotate_foot_points(points, angle, center):
     
     return rotated_points
 
+def calculate_pressure(y, direction, upward, downward):
+    """
+    Determine the pressure value based on the direction and y-coordinate.
+    """
+    pressure_map = upward if direction == 0 else downward
+    for key, value in pressure_map.items():
+        if key[0] <= y <= key[1]:
+            return value
+    return 0
+
+def process_footprint(grid, step_points, direction, upward, downward, foot_length):
+    """
+    Process each footprint, apply rotation, and update the grid with pressure values.
+    """
+    for point in step_points:
+        x, y = point
+        foot_center = (x, y)
+        foot_points = foot.generate_foot(center=foot_center, size=foot_length)
+
+        # Rotate the foot based on direction
+        angle = foot_angle(direction)
+        rotated_foot_points = rotate_foot_points(foot_points, angle, foot_center)
+
+        # Determine the pressure value
+        pressure = calculate_pressure(y, direction, upward, downward)
+
+        # Add the rotated footprint to the grid
+        add_footprint_to_grid(grid, rotated_foot_points, pressure)
+
+    return grid
+
+
+
 #current assume cm
 stair_width = 200
 stair_length = 50 
 stair_height = 50
-upward = {
-    (23, 27): 129.00,
-    (20, 22): 114.67,
-    (16, 19): 78.28,
-    (13, 15): 102.28,
-    (8, 12): 118.85,
-    (5, 7): 88.17,
-    (2, 4): 43.60,
-    (0, 1): 35
-}
-downward = {
-    (23, 27): 74.50,
-    (20, 22): 82.67,
-    (16, 19): 59.14,
-    (13, 15): 128.50,
-    (8, 12): 144.43,
-    (5, 7): 94.71,
-    (2, 4): 27,
-    (0, 1): 20
-}
-is_downward = True
+
 human_width = 50
 foot_length = 27
 
-iterations = 100
 
 size = np.array((stair_width, stair_length))
 
@@ -110,49 +122,56 @@ size = np.array((stair_width, stair_length))
 # Or to the sides of the stairs
 
 
-def monte_carlo(stair_width, stair_height, iterations, custom_pressures, is_downward ,distribution_type=gaussian_2d):
-    base_grid  = distribution_type(size, (stair_width/2, stair_height/2), human_width, foot_length)
+def monte_carlo(stair_width, stair_height, iterations, upward_percentage, distribution_type=gaussian_2d):
 
-    step_points = sample_points_from_distribution(base_grid , iterations)
+    percentages = [upward_percentage, 1 - upward_percentage]
+    
+    upward = {
+    (23, 27): 129.00,
+    (20, 22): 114.67,
+    (16, 19): 78.28,
+    (13, 15): 102.28,
+    (8, 12): 118.85,
+    (5, 7): 88.17,
+    (2, 4): 43.60,
+    (0, 1): 35
+    }
 
-    # Initialize heatmap grid (aggregated pressure values)
+    downward = {
+    (23, 27): 74.50,
+    (20, 22): 82.67,
+    (16, 19): 59.14,
+    (13, 15): 128.50,
+    (8, 12): 144.43,
+    (5, 7): 94.71,
+    (2, 4): 27,
+    (0, 1): 20
+    }
+
+    base_grid = distribution_type(size, (stair_width / 2, stair_height / 2), human_width, foot_length)
+
+    # Initialize heatmap grid
     heatmap_grid = np.zeros_like(base_grid)
 
-    # Add footprints to the heatmap
-    for point in step_points:
-        x, y = point
-        foot_center = (x, y)
-        foot_points = foot.generate_foot(center=foot_center, size=foot_length) 
-
-        angle = foot_angle(is_downward)
-        rotated_foot_points = rotate_foot_points(foot_points, angle, foot_center)
-        
-        pressure = 0
-        for key, value in custom_pressures.items():
-            if key[0] <= y <= key[1]:
-                pressure = value
-                break
-
-        add_footprint_to_grid(heatmap_grid, rotated_foot_points, pressure)
+    # Process each direction (upward and downward)
+    for direction, percentage in enumerate(percentages):
+        num_steps = int(percentage * iterations)
+        step_points = sample_points_from_distribution(base_grid, num_steps)
+        heatmap_grid = process_footprint(heatmap_grid, step_points, direction, upward, downward, foot_length)
 
     # Smooth the heatmap for better visualization
     smoothed_heatmap = gaussian_filter(heatmap_grid, sigma=2)
-
-    # Prepare data for 3D surface plot (swap x and y)
-    x = np.arange(smoothed_heatmap.shape[0])  # Stair width
-    y = np.arange(smoothed_heatmap.shape[1])  # Stair depth
-    x, y = np.meshgrid(x, y)  # Create grid for plotting (swap axes)
     z = smoothed_heatmap.T  # Transpose Z to match swapped X and Y
 
-    return z    
+    return z
 
 if __name__ == '__main__':
 
     # Run the Monte Carlo simulation
     fig = plt.figure(figsize=(10, 6))
     ax = fig.add_subplot(111, projection='3d')  # 3D plot
-    x, y, z = monte_carlo(stair_width, stair_height, 1, custom_pressures)
-    surf = ax.plot_surface(x, y, z, cmap="viridis")  # Use a colormap like viridis
+    z = monte_carlo(stair_width, stair_height, 10000, 0, distribution_type=uniform_2d)
+    surf = ax.plot_surface(np.arange(z.shape[1]), np.arange(z.shape[0])[:, None], z, cmap="viridis")
 
     # Add color bar and labels
     fig.colorbar(surf, ax=ax, label="Pressure Intensity")
