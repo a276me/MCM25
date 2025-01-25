@@ -4,6 +4,9 @@ from mpl_toolkits.mplot3d import Axes3D
 from scipy.ndimage import gaussian_filter
 import foot
 
+def uniform_2d(size, center, sigma_x, sigma_y):
+    return np.ones((size[1], size[0])) # Uniform distribution
+
 def gaussian_2d(size, center, sigma_x, sigma_y):
     width, height= size
     x = np.linspace(0, width - 1, width)
@@ -43,8 +46,10 @@ def add_footprint_to_grid(grid, footprint, pressure):
         if 0 <= x < grid.shape[1] and 0 <= y < grid.shape[0]:  # Check bounds
             grid[y, x] += pressure
 
-def foot_angle():
-    return np.random.uniform(0, 90)
+def foot_angle(is_downward = True):
+    if not is_downward:
+        return np.random.uniform(0-45,0+45)
+    return np.random.uniform(180-45,180+45)
 
 def rotate_foot_points(points, angle, center):
     angle_rad = np.radians(angle)  # Convert angle to radians
@@ -64,7 +69,7 @@ def rotate_foot_points(points, angle, center):
         new_x += cx
         new_y += cy
         
-        rotated_points.append((int(round(new_x)), int(round(new_y))))
+        rotated_points.append(((round(new_x)), (round(new_y))))
     
     return rotated_points
 
@@ -72,7 +77,7 @@ def rotate_foot_points(points, angle, center):
 stair_width = 200
 stair_length = 50 
 stair_height = 50
-custom_pressures = {
+upward = {
     (23, 27): 129.00,
     (20, 22): 114.67,
     (16, 19): 78.28,
@@ -80,8 +85,19 @@ custom_pressures = {
     (8, 12): 118.85,
     (5, 7): 88.17,
     (2, 4): 43.60,
-    (0, 1): 0.00
+    (0, 1): 35
 }
+downward = {
+    (23, 27): 74.50,
+    (20, 22): 82.67,
+    (16, 19): 59.14,
+    (13, 15): 128.50,
+    (8, 12): 144.43,
+    (5, 7): 94.71,
+    (2, 4): 27,
+    (0, 1): 20
+}
+is_downward = True
 human_width = 50
 foot_length = 27
 
@@ -94,8 +110,8 @@ size = np.array((stair_width, stair_length))
 # Or to the sides of the stairs
 
 
-def monte_carlo(stair_width, stair_height, iterations, custom_pressures):
-    base_grid  = gaussian_2d(size, (stair_width/2, stair_height/2), human_width, foot_length)
+def monte_carlo(stair_width, stair_height, iterations, custom_pressures, is_downward ,distribution_type=gaussian_2d):
+    base_grid  = distribution_type(size, (stair_width/2, stair_height/2), human_width, foot_length)
 
     step_points = sample_points_from_distribution(base_grid , iterations)
 
@@ -108,7 +124,7 @@ def monte_carlo(stair_width, stair_height, iterations, custom_pressures):
         foot_center = (x, y)
         foot_points = foot.generate_foot(center=foot_center, size=foot_length) 
 
-        angle = foot_angle()
+        angle = foot_angle(is_downward)
         rotated_foot_points = rotate_foot_points(foot_points, angle, foot_center)
         
         pressure = 0
