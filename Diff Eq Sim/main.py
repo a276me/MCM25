@@ -1,24 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Variables
-stair_height = 20
-stair_width = 80
-stair_depth = 20
-num_of_stairs = 3
-top_left_coord = (10)
+# we use equation Erotion rate = - Del (q) where q is sediment flux vector
+# the sediment flux vector is a x C x Velocity, where velocity is proportional to gradient of terrain
+# C has units of kg/m^3 which is density of water
+# a has units of kg/kg for how much mass on target is loss per mass of water
 
-# Setup Grid
-space = np.zeros(shape=(stair_depth*num_of_stairs+2, stair_width+2))
+# boundary conditions are constant gradient
 
-# Boundary Conditions
-space[0,:] = 0
-space[-1,:] = 0
-space[:,0] = 0
-space[:,-1] = 0
+def simulate_water(grid):
 
-space[1:stair_depth+1, 1:stair_width+1] = 1
 
-plt.imshow(space)
-plt.show()
 
