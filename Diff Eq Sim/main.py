@@ -20,8 +20,8 @@ stair_height = 30
 
 Lx, Ly = stair_width, stair_length * 3 # Domain size
 Nx, Ny = int(Lx), int(Ly)    # Number of grid points
-alpha = 0.000001         # Weather Errosion
-beta = 0.01      # Step Errosion coefficient
+alpha = 0.0001         # Weather Errosion
+beta = 1      # Step Errosion coefficient
 T_max = 2.0          # Maximum time
 dt = 0.1               # Time step
 dx = 1 #Lx / (Nx - 1)   # Grid spacing in x
@@ -77,8 +77,8 @@ force_map = np.zeros((Nx, Ny))
 for i in range(3): 
     u[:,stair_length*i:stair_length*(i+1)] = stair_height*i
 
-force_map[:, stair_length:2*stair_length] = mc.monte_carlo(stair_width, stair_length, 10, mc.custom_pressures)
-force_map = force_map / force_map.max()
+force_map[:, stair_length:2*stair_length] = mc.monte_carlo(stair_width, stair_length, 10, mc.downward, True, mc.gaussian_2d)
+# force_map = force_map / force_map.max()
 
 # u = np.random.random(size=(Nx, Ny))
 # u[int(Nx/4):int(3*Nx/4), int(Ny/4):int(3*Ny/4)] = 10.0  # Hot square in the center
@@ -99,7 +99,7 @@ def update(frame):
 
     for i in range(5):
         update_grid()
-    force_map[:, stair_length:2*stair_length] = mc.monte_carlo(stair_width, stair_length, 10, mc.custom_pressures)
+    force_map[:, stair_length:2*stair_length] = mc.monte_carlo(stair_width, stair_length, 10, mc.downward, True, mc.gaussian_2d)
     force_map = force_map / force_map.max()
 
     X, Y = np.meshgrid(np.linspace(0, Lx, Nx), np.linspace(0, Ly, Ny))
