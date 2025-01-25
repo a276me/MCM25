@@ -88,21 +88,3 @@ filtered_x_coords = [p["x"] for p in filtered_points_with_pressure]
 filtered_y_coords = [p["y"] for p in filtered_points_with_pressure]
 pressures = [p["pressure"] for p in filtered_points_with_pressure]
 
-# Plot the points for visualization
-plt.figure(figsize=(8, 10))
-plt.scatter(filtered_x_coords, filtered_y_coords, s=10, color="blue", label="Points")
-
-# Annotate each point with its pressure value
-for p in filtered_points_with_pressure:
-    plt.text(p["x"] + 0.3, p["y"] + 0.3, f'{p["pressure"]:.2f}', fontsize=8, color="red")
-
-plt.axis("equal")
-plt.title("Foot Shape with Custom Pressure Values (Top 10 Rows: Height 10 to 20)")
-plt.xlabel("X Coordinate")
-plt.ylabel("Y Coordinate")
-plt.legend()
-plt.show()
-
-# Output the filtered list of coordinates with pressure
-print("Filtered points with custom pressure values ")
-print(filtered_points)
