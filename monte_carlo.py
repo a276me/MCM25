@@ -1,20 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D  
+from scipy.ndimage import gaussian_filter
+import foot
 
 def gaussian_2d(size, center, sigma_x, sigma_y):
-    """
-    Generate a 2D Gaussian distribution.
-
-    Parameters:
-    - size: Tuple of grid size (height, width).
-    - mean_x: Mean of the Gaussian in the x-direction.
-    - mean_y: Mean of the Gaussian in the y-direction.
-    - sigma_x: Standard deviation of the Gaussian in the x-direction.
-    - sigma_y: Standard deviation of the Gaussian in the y-direction.
-
-    Returns:
-    - A 2D array containing the Gaussian distribution.
-    """
     width, height= size
     x = np.linspace(0, width - 1, width)
     y = np.linspace(0, height - 1, height)
@@ -47,28 +37,111 @@ def sample_points_from_distribution(distribution, num_samples):
     return np.column_stack((sampled_x, sampled_y))
 
 
+def add_footprint_to_grid(grid, footprint, pressure):
+    for point in footprint:
+        x, y = point
+        if 0 <= x < grid.shape[1] and 0 <= y < grid.shape[0]:  # Check bounds
+            grid[y, x] += pressure
+
+def foot_angle():
+    return np.random.uniform(0, 90)
+
+def rotate_foot_points(points, angle, center):
+    angle_rad = np.radians(angle)  # Convert angle to radians
+    cx, cy = center
+    rotated_points = []
+    
+    for x, y in points:
+        # Translate point to origin
+        x -= cx
+        y -= cy
+        
+        # Rotate using 2D rotation matrix
+        new_x = x * np.cos(angle_rad) - y * np.sin(angle_rad)
+        new_y = x * np.sin(angle_rad) + y * np.cos(angle_rad)
+        
+        # Translate point back
+        new_x += cx
+        new_y += cy
+        
+        rotated_points.append((int(round(new_x)), int(round(new_y))))
+    
+    return rotated_points
+
 #current assume cm
 stair_width = 200
-stair_depth = 30
+stair_length = 30 
 stair_height = 30
-
-size = np.array((stair_width, stair_depth))
-
+custom_pressures = {
+    (23, 27): 129.00,
+    (20, 22): 114.67,
+    (16, 19): 78.28,
+    (13, 15): 102.28,
+    (8, 12): 118.85,
+    (5, 7): 88.17,
+    (2, 4): 43.60,
+    (0, 1): 0.00
+}
 human_width = 50
-foot_length = 20
+foot_length = 27
 
-iterations = 100
+iterations = 3
+
+size = np.array((stair_width, stair_length))
+
 
 # We will assume that a single person prefers to walk either in the center
 # Or to the sides of the stairs
 
-oneperson = gaussian_2d(size, size/2, human_width, foot_length)
 
-step_points = sample_points_from_distribution(oneperson, iterations)
+def monte_carlo(stair_width, stair_height, iterations, custom_pressures):
+    base_grid  = gaussian_2d(size, (stair_width/2, stair_height/2), human_width, foot_length)
 
+    step_points = sample_points_from_distribution(base_grid , iterations)
 
+    # Initialize heatmap grid (aggregated pressure values)
+    heatmap_grid = np.zeros_like(base_grid)
 
+    # Add footprints to the heatmap
+    for point in step_points:
+        x, y = point
+        foot_center = (x, y)
+        foot_points = foot.generate_foot(center=foot_center, size=foot_length) 
 
-plt.imshow(oneperson)
+        angle = foot_angle()
+        rotated_foot_points = rotate_foot_points(foot_points, angle, foot_center)
+        
+        pressure = 0
+        for key, value in custom_pressures.items():
+            if key[0] <= y <= key[1]:
+                pressure = value
+                break
+
+        add_footprint_to_grid(heatmap_grid, rotated_foot_points, pressure)
+
+    # Smooth the heatmap for better visualization
+    smoothed_heatmap = gaussian_filter(heatmap_grid, sigma=2)
+
+    # Prepare data for 3D surface plot (swap x and y)
+    x = np.arange(smoothed_heatmap.shape[0])  # Stair width
+    y = np.arange(smoothed_heatmap.shape[1])  # Stair depth
+    x, y = np.meshgrid(x, y)  # Create grid for plotting (swap axes)
+    z = smoothed_heatmap.T  # Transpose Z to match swapped X and Y
+
+    return x, y, z    
+
+# Run the Monte Carlo simulation
+fig = plt.figure(figsize=(10, 6))
+ax = fig.add_subplot(111, projection='3d')  # 3D plot
+x, y, z = monte_carlo(stair_width, stair_height, iterations, custom_pressures)
+surf = ax.plot_surface(x, y, z, cmap="viridis")  # Use a colormap like viridis
+
+# Add color bar and labels
+fig.colorbar(surf, ax=ax, label="Pressure Intensity")
+ax.set_title("Aggregated Foot Pressure Surface Plot (With Random Angles)")
+ax.set_xlabel("Stair Length")
+ax.set_ylabel("Stair Width")
+ax.set_zlabel("Pressure")
+
 plt.show()
 
