@@ -148,7 +148,7 @@ class ModelI:
         # self.u[:, -1] = 3*self.q
 
 
-    def run_simulation(self, iterations, save_file='./DiffEqSim/sim.npy'):
+    def run_simulation(self, iterations, save_file='sim.npy'):
 
         self.Lx, self.Ly = self.stair_width, self.stair_length # Domain size
         self.Nx, self.Ny = int(self.Lx), int(self.Ly) 

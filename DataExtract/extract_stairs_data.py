@@ -22,6 +22,39 @@ def plot_matrix(matrix):
     plt.ylabel('Row Index')
     plt.show()
 
+def plot_matrix_3d(matrix):
+    """
+    Plot a 3D surface where the entries of the matrix represent the heights.
+
+    Args:
+        matrix (list[list[float]] | np.ndarray): 2D array representing heights.
+    """
+    # Ensure the matrix is a NumPy array
+    matrix = np.array(matrix)
+
+    # Get the dimensions of the matrix
+    rows, cols = matrix.shape
+
+    # Create grid coordinates for the matrix entries
+    x = np.arange(cols)
+    y = np.arange(rows)
+    x, y = np.meshgrid(x, y)
+
+    # Create the plot
+    fig = plt.figure(figsize=(8, 6))
+    ax = fig.add_subplot(111, projection='3d')
+
+    # Plot the surface
+    ax.plot_surface(x, y, matrix, cmap='viridis')
+
+    # Set labels
+    ax.set_xlabel('Column Index')
+    ax.set_ylabel('Row Index')
+    ax.set_zlabel('Height')
+
+    # Show the plot
+    plt.show()
+
 
 def replace_zeros_with_neighbors(matrix):
     """Replaces zeros in the matrix with the average of surrounding non-zero elements."""
@@ -53,5 +86,6 @@ data = data[10:270]
 sample_stairs_data = replace_zeros_with_neighbors(data)
 
 if __name__ == "__main__":
-    plot_matrix(sample_stairs_data[85:135])
+    #plot_matrix(sample_stairs_data[85:135])
     plot_matrix(sample_stairs_data)
+    plot_matrix_3d(sample_stairs_data)

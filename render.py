@@ -1,4 +1,6 @@
 from DataExtract.extract_stairs_data import sample_stairs_data as original
+from DataExtract.extract_stairs_data import plot_matrix, plot_matrix_3d
+import main
 
 def heightmap_to_obj(heightmap, output_path, cell_size=0.01):
     """
@@ -147,16 +149,14 @@ def heightmap_to_obj(heightmap, output_path, cell_size=0.01):
             # Face is (v1, v2, v3) -> "f v1 v2 v3"
             f.write("f {} {} {}\n".format(*face))
 
-# Example usage:
+def render(matrix,output=False):
+    #plot_matrix(matrix)
+    plot_matrix_3d(matrix)
+    if output:
+        output_file = "stairs.obj"
+        heightmap_to_obj(matrix, output_file, cell_size=0.01)
+        print(f"OBJ file saved to: {output_file}")
+    
 if __name__ == "__main__":
-    # Example heightmap, a small 2D list
-    # This is just a single "bump" in the middle
-    heightmap = [
-        [0, 0, 0, 0],
-        [0, 1, 1, 0],
-        [0, 1, 1, 0],
-        [0, 0, 0, 0],
-    ]
-    output_file = "stairs.obj"
-    heightmap_to_obj(original, output_file, cell_size=0.01)
-    print(f"OBJ file saved to: {output_file}")
+    render(main.ModelI().run_simulation(200)[150,0])
+
