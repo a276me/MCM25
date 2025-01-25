@@ -50,8 +50,8 @@ def replace_zeros_with_neighbors(matrix):
 file_path = 'DataExtract/stairs_data.txt'
 data = read_matrix_from_txt(file_path)
 data = data[10:270]
-Data = replace_zeros_with_neighbors(data)
+sample_stairs_data = replace_zeros_with_neighbors(data)
 
 if __name__ == "__main__":
-    plot_matrix(Data[85:135])
-    plot_matrix(Data)
+    plot_matrix(sample_stairs_data[85:135])
+    plot_matrix(sample_stairs_data)

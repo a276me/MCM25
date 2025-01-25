@@ -1,3 +1,5 @@
 # MCM25
 
-Bobby is Gay
+Lixing is Father
+
+Andy and Bobby is son
