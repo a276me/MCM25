@@ -70,8 +70,8 @@ def rotate_foot_points(points, angle, center):
 
 #current assume cm
 stair_width = 200
-stair_length = 30 
-stair_height = 30
+stair_length = 50 
+stair_height = 50
 custom_pressures = {
     (23, 27): 129.00,
     (20, 22): 114.67,
@@ -85,7 +85,7 @@ custom_pressures = {
 human_width = 50
 foot_length = 27
 
-iterations = 3
+iterations = 100
 
 size = np.array((stair_width, stair_length))
 
@@ -128,20 +128,23 @@ def monte_carlo(stair_width, stair_height, iterations, custom_pressures):
     x, y = np.meshgrid(x, y)  # Create grid for plotting (swap axes)
     z = smoothed_heatmap.T  # Transpose Z to match swapped X and Y
 
-    return x, y, z    
+    return z    
 
-# Run the Monte Carlo simulation
-fig = plt.figure(figsize=(10, 6))
-ax = fig.add_subplot(111, projection='3d')  # 3D plot
-x, y, z = monte_carlo(stair_width, stair_height, iterations, custom_pressures)
-surf = ax.plot_surface(x, y, z, cmap="viridis")  # Use a colormap like viridis
+if __name__ == '__main__':
 
-# Add color bar and labels
-fig.colorbar(surf, ax=ax, label="Pressure Intensity")
-ax.set_title("Aggregated Foot Pressure Surface Plot (With Random Angles)")
-ax.set_xlabel("Stair Length")
-ax.set_ylabel("Stair Width")
-ax.set_zlabel("Pressure")
+    # Run the Monte Carlo simulation
+    fig = plt.figure(figsize=(10, 6))
+    ax = fig.add_subplot(111, projection='3d')  # 3D plot
+    x, y, z = monte_carlo(stair_width, stair_height, 1, custom_pressures)
+    surf = ax.plot_surface(x, y, z, cmap="viridis")  # Use a colormap like viridis
 
-plt.show()
+    # Add color bar and labels
+    fig.colorbar(surf, ax=ax, label="Pressure Intensity")
+    ax.set_title("Aggregated Foot Pressure Surface Plot (With Random Angles)")
+    ax.set_xlabel("Stair Length")
+    ax.set_ylabel("Stair Width")
+    ax.set_zlabel("Pressure")
+
+    ax.set_box_aspect([1,3,0.3])
+    plt.show()
 
