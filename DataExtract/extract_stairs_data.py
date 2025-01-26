@@ -169,18 +169,18 @@ def plot_contours(data, n_levels=10):
 
 file_path = 'DataExtract/stairs_data.txt'
 data = read_matrix_from_txt(file_path)
-data = data[10:270,1:681]
-data.reshape(130, 2, 340, 2).mean(axis=(1,3))
+data = data[5:136,1:341]
+
 sample_stairs_data = replace_zeros_with_neighbors(data)
-sample_step_data =sample_stairs_data[80:140]
+sample_step_data =sample_stairs_data[40:70]
 sample_step_data = sample_step_data[::-1]
 sample_step_data = subtract_plane(sample_step_data)
 #sample_step_data = subtract_linear_fit(sample_step_data)
-sample_stairs_dimension = (60,680,12)
+sample_stairs_dimension = (30,340,12)
 
 if __name__ == "__main__":
     #plot_matrix(sample_stairs_data[85:135])
-    #plot_matrix(sample_step_data)
+    plot_matrix(sample_step_data)
     plot_contours(sample_step_data)
     print(sample_step_data.shape)
     
