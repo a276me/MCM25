@@ -3,11 +3,70 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D  
 from scipy.ndimage import gaussian_filter
 import foot
+import testditribution as td
+import time
 
-def uniform_2d(size, center, sigma_x, sigma_y):
+def uniform_2d(size, sigma_x, sigma_y):
     return np.ones((size[1], size[0])) # Uniform distribution
 
-def multi_modal_2d(size, center, sigma_x, sigma_y, human_width, n_peak):
+def multi_modal_2d(size, sigma_x, sigma_y, n_peak):
+    """
+    Generate multi-peak 2D distribution with automatic peak placement
+    Parameters:
+        size: (width, height) of the output array
+        sigma_x: standard deviation in x-direction
+        sigma_y: standard deviation in y-direction
+        n_peak: number of desired peaks
+    """
+    width, height = size
+    distribution = np.zeros(size[::-1])  # Create empty array
+    
+    # Calculate maximum number of possible peaks based on sigma_x
+    n_max = size[0] / sigma_x  # Maximum number of peaks allowed
+    n_actual = min(n_peak, n_max)
+    
+    # Calculate horizontal positions
+    left_bound = 30
+    right_bound = width - 30
+    y_center = height // 2
+    
+    # if n_actual == 1:
+    #     x_centers = [width // 2]
+    # else:
+    #     # Evenly distribute peaks between bounds
+    #     x_centers = np.linspace(left_bound, right_bound, n_actual).astype(int)
+    
+    for pos in range(left_bound, right_bound):
+        x_centers = [pos]
+        distribution += gaussian_2d(
+            size=size,
+            center=(pos, y_center),
+            sigma_x=sigma_x,
+            sigma_y=sigma_y
+        )
+        pos += size[0] / n_actual * sigma_x 
+
+    # # Create Gaussian peaks
+    # for x in x_centers:
+    #     # Calculate distance from nearest edge
+    #     edge_distance = min(x - left_bound, right_bound - x)
+    #     max_edge_distance = (right_bound - left_bound) // 2
+    #     strength = 0.1 + 0.9 * (edge_distance / max_edge_distance)  # Strength reduction near edges
+        
+    #     # Add Gaussian to distribution
+    #     distribution += gaussian_2d(
+    #         size=size,
+    #         center=(x, y_center),
+    #         sigma_x=sigma_x,
+    #         sigma_y=sigma_y
+    #     ) * strength
+    
+    # Normalize distribution
+    distribution /= distribution.max()
+    
+    return distribution
+
+# def multi_modal_2d(size, center, sigma_x, sigma_y, human_width, n_peak):
     width, height = size
     centers = []
     left_edge = 30 
@@ -93,6 +152,21 @@ def gaussian_2d(size, center, sigma_x, sigma_y):
                         ((y - center[1]) ** 2) / (2 * sigma_y ** 2)))
     return gaussian
 
+def x_distribute(trials, n):
+    x_pos = []
+
+    for i in range (trials):
+        y=[td.generate_normal_points_int(170,25,0,340)]
+        for j in range(n):
+            #pos = generate_normal_points_int(std_dev=200)
+            pos = np.random.uniform(low=0, high=341, size=1).astype(int)
+            #pos = generate_left_skewed_points_int()
+            if td.find_min_difference(pos,y)>50:
+                y.append(pos)
+                x_pos.append(pos)
+
+    return x_pos
+
 def sample_points_from_distribution(distribution, num_samples):
     """
     Sample points from a 2D distribution using probabilities.
@@ -110,16 +184,20 @@ def sample_points_from_distribution(distribution, num_samples):
     sampled_indices = np.searchsorted(cumulative_prob, random_values)
 
     # Convert the flat indices back to 2D coordinates
-    sampled_y, sampled_x = np.unravel_index(sampled_indices, distribution.shape)
+    sampled_x = x_distribute(trials = num_samples, n = 5) 
+    sampled_y, x = np.unravel_index(sampled_indices, distribution.shape)
 
     return np.column_stack((sampled_x, sampled_y))
 
 
 def add_footprint_to_grid(grid, footprint, pressure):
+
     for point in footprint:
         x, y = point
         if 0 <= x < grid.shape[1] and 0 <= y < grid.shape[0]:  # Check bounds
             grid[y, x] += pressure
+    
+    return grid
 
 def foot_angle(is_downward = True):
     if is_downward:
@@ -158,28 +236,36 @@ def calculate_pressure(y, direction, upward, downward):
             return value
     return 0
 
-def process_footprint(grid, step_points, direction, upward, downward, foot_length):
+def process_footprint(grid, iterations, direction, upward, downward, foot_length, n):
     """
     Process each footprint, apply rotation, and update the grid with pressure values.
     """
-    for point in step_points:
-        x, y = point
-        foot_center = (x, y)
-        foot_points = foot.generate_foot(center=foot_center, size=foot_length)
+    for i in range(iterations):
+        X=[np.random.normal(grid.shape[1] // 2, 25)]
+        y = np.random.normal(grid.shape[0] // 2, foot_length)
+        for j in range(n):
+            #pos = generate_normal_points_int(std_dev=200)
+            pos = np.random.uniform(low=0, high=grid.shape[1])
+            #pos = generate_left_skewed_points_int()
+            if td.find_min_difference(pos,X)>50:
+                X.append(pos)
+            
+        for x in X:
+            foot_center = (x, y)
+            foot_points = foot.generate_foot(center=foot_center, size=foot_length)
+            # Rotate the foot based on direction
+            angle = foot_angle(direction)
+            rotated_foot_points = rotate_foot_points(foot_points, angle, foot_center)
 
-        # Rotate the foot based on direction
-        angle = foot_angle(direction)
-        rotated_foot_points = rotate_foot_points(foot_points, angle, foot_center)
+            # Determine the pressure value
+            pressure = calculate_pressure(y, direction, upward, downward)
 
-        # Determine the pressure value
-        pressure = calculate_pressure(y, direction, upward, downward)
-
-        # Add the rotated footprint to the grid
-        add_footprint_to_grid(grid, rotated_foot_points, pressure)
+            # Add the rotated footprint to the grid
+            grid = add_footprint_to_grid(grid, rotated_foot_points, pressure)
 
     return grid
 
-def monte_carlo(stair_width, stair_length, iterations, upward_percentage, number_percentage, n_peak):
+def monte_carlo(stair_width, stair_length, iterations, upward_percentage, n):
 
     # if stair_width <= 100:
     #     distribution_type = gaussian_2d
@@ -210,49 +296,36 @@ def monte_carlo(stair_width, stair_length, iterations, upward_percentage, number
     (0, 1): 20
     }
 
-    size = np.array((stair_width, stair_length))
+    size = np.array((stair_length,stair_width))
 
     human_width = 50
     foot_length = 27
 
-    base_grid = multi_modal_2d(size, (stair_width / 2, stair_length / 2), human_width, foot_length, human_width, n_peak) * (1 - number_percentage)
-    base_grid += gaussian_2d(size, (stair_width / 2, stair_length / 2), human_width, foot_length) * number_percentage
-
     # Initialize heatmap grid
-    heatmap_grid = np.zeros_like(base_grid)
+    heatmap_grid = np.zeros(size)
 
     # Process each direction (upward and downward)
     for direction, percentage in enumerate(percentages):
-        num_steps = int(percentage * iterations)
-        step_points = sample_points_from_distribution(base_grid, num_steps)
-        heatmap_grid = process_footprint(heatmap_grid, step_points, direction, upward, downward, foot_length)
+        num_steps = int(percentage * iterations/n)
+        heatmap_grid += process_footprint(heatmap_grid, num_steps, direction, upward, downward, foot_length,n)
 
     # Smooth the heatmap for better visualization
     smoothed_heatmap = gaussian_filter(heatmap_grid, sigma=2)
     z = smoothed_heatmap.T
 
-    return base_grid, z  # Return both the initial distribution and the final heatmap
+    return z  # Return both the initial distribution and the final heatmap
 
 if __name__ == '__main__':
-    stair_width = 500
+    stair_width = 300
     stair_length = 50
-    iterations = 10000
+    iterations = 500
     upward_percentage = 0.5
-    number_percentage = 0 # Percentage of gaussian-modal distribution
-    n_peak = 6
-
-
+    # number_percentage = 0 # Percentage of gaussian-modal distribution
+    n_peak = 2
     # Get the initial distribution and final heatmap
-    base_grid, z = monte_carlo(stair_width, stair_length, iterations, upward_percentage, number_percentage, n_peak)
-
-    # Plot the initial distribution
-    plt.figure(figsize=(10, 6))
-    plt.imshow(base_grid.T, cmap="viridis", origin="lower", extent=[0, stair_length, 0, stair_width])
-    plt.colorbar(label="Probability Density")
-    plt.title("Initial Distribution (Base Grid)")
-    plt.xlabel("Stair Width")
-    plt.ylabel("Stair Length")
-    plt.show()
+    t1 = time.time()
+    z = monte_carlo(stair_width, stair_length, iterations, upward_percentage, n_peak)
+    print("Time taken: ", (time.time() - t1) / (iterations / n_peak), " minutes")
 
     # Plot the final heatmap
     fig = plt.figure(figsize=(10, 6))
