@@ -171,7 +171,7 @@ file_path = 'DataExtract/stairs_data.txt'
 data = read_matrix_from_txt(file_path)
 data = data[5:136,1:341]
 
-sample_stairs_data = replace_zeros_with_neighbors(data)
+sample_stairs_data = replace_zeros_with_neighbors(data)*100
 sample_step_data =sample_stairs_data[40:70]
 sample_step_data = sample_step_data[::-1]
 sample_step_data = subtract_plane(sample_step_data)
@@ -182,5 +182,5 @@ if __name__ == "__main__":
     #plot_matrix(sample_stairs_data[85:135])
     plot_matrix(sample_step_data)
     plot_contours(sample_step_data)
-    print(sample_step_data.shape)
+    #print(sample_step_data.shape)
     

@@ -188,6 +188,6 @@ def render(matrix,output=False):
 if __name__ == "__main__":
     #model = SimulationSettings(1, Environment(1, 1), Stairs(200, 50, 50, Material(1, sd.H_rubber_kPa, sd.sliding_distance)), StairsUsage(1, 1, False))
     #render(model.final_shape[0,0])
-    render((sample_step_data.reshape(75, 2, 170, 2).mean(axis=(1,3))+0.015)*30,True)
+    render((sample_step_data+0.015)*30,True)
     
 
