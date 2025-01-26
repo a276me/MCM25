@@ -159,7 +159,5 @@ def render(matrix,output=False):
         print(f"OBJ file saved to: {output_file}")
     
 if __name__ == "__main__":
-    model = SimulationSettings()
-    render(model.sim)
     
 

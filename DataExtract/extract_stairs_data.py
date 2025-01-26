@@ -23,29 +23,13 @@ def plot_matrix(matrix):
     plt.show()
 
 def plot_matrix_3d(matrix):
-    """
-    Plot a 3D surface where the entries of the matrix represent the heights.
-
-    Args:
-        matrix (list[list[float]] | np.ndarray): 2D array representing heights.
-    """
-    # Ensure the matrix is a NumPy array
-    matrix = np.array(matrix)
-
-    # Get the dimensions of the matrix
-    rows, cols = matrix.shape
-
-    # Create grid coordinates for the matrix entries
-    x = np.arange(cols)
-    y = np.arange(rows)
-    x, y = np.meshgrid(x, y)
 
     # Create the plot
     fig = plt.figure(figsize=(8, 6))
     ax = fig.add_subplot(111, projection='3d')
 
     # Plot the surface
-    ax.plot_surface(x, y, matrix, cmap='viridis')
+    ax.plot_surface(matrix[1],matrix[2],matrix[0], cmap='viridis')
 
     # Set labels
     ax.set_xlabel('Column Index')

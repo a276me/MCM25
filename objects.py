@@ -71,6 +71,6 @@ class SimulationSettings:
                             dt=self.period)
         
         self.simulation = self.model.run_simulation(self.iterations)
-        self.final_shape = self.simulation[self.iteration-1]
+        self.final_shape = self.simulation[self.iterations-1]
 
 
