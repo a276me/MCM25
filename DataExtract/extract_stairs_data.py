@@ -80,7 +80,50 @@ def subtract_plane(data):
     (a, b, c), residuals, rank, s = np.linalg.lstsq(G, Z_flat, rcond=None)
     
     # Construct the fitted plane for each point in the 2D grid
-    plane = a * X + b * Y + c
+    plane = a * X + c
+    
+    # Subtract the fitted plane from the original data
+    data_subtracted = data - plane
+    
+    return data_subtracted
+
+def subtract_linear_fit(data):
+    """
+    Subtracts a best-fit plane from a 2D array of height data.
+    
+    Parameters
+    ----------
+    data : 2D numpy.ndarray
+        A 2D array of height values, shape (rows, cols).
+    
+    Returns
+    -------
+    data_subtracted : 2D numpy.ndarray
+        The original data with the best-fit plane subtracted.
+    """
+    # Get the shape of the input data
+    rows, cols = data.shape
+    
+    # Create a coordinate grid
+    # Y will vary from 0 to rows-1 (down the rows),
+    # X will vary from 0 to cols-1 (across the columns).
+    Y, X = np.mgrid[:rows, :cols]
+    
+    # Flatten the coordinates and data for fitting
+    X_flat = X.ravel()
+    Y_flat = Y.ravel()
+    Z_flat = data.ravel()
+    
+    # Build the design matrix G where each row is [x, y, 1].
+    # This corresponds to fitting the model z = a*x + b*y + c
+    G = np.column_stack((X_flat, Y_flat, np.ones_like(X_flat)))
+    
+    # Solve for the least-squares fit of the plane coefficients (a, b, c)
+    # using numpy.linalg.lstsq
+    (a, b, c), residuals, rank, s = np.linalg.lstsq(G, Z_flat, rcond=None)
+    
+    # Construct the fitted plane for each point in the 2D grid
+    plane = a * X + b * Y+ c
     
     # Subtract the fitted plane from the original data
     data_subtracted = data - plane
@@ -130,12 +173,14 @@ data = data[10:270,1:681]
 data.reshape(130, 2, 340, 2).mean(axis=(1,3))
 sample_stairs_data = replace_zeros_with_neighbors(data)
 sample_step_data =sample_stairs_data[80:140]
+sample_step_data = sample_step_data[::-1]
 sample_step_data = subtract_plane(sample_step_data)
+#sample_step_data = subtract_linear_fit(sample_step_data)
 sample_stairs_dimension = (60,680,12)
 
 if __name__ == "__main__":
     #plot_matrix(sample_stairs_data[85:135])
-    #plot_matrix(sample_stairs_data)
+    #plot_matrix(sample_step_data)
     plot_contours(sample_step_data)
     print(sample_step_data.shape)
     
