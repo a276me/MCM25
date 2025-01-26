@@ -182,5 +182,7 @@ if __name__ == "__main__":
     #plot_matrix(sample_stairs_data[85:135])
     plot_matrix(sample_step_data)
     plot_contours(sample_step_data)
+    plt.plot(sample_step_data.mean(axis=0))
+    plt.show()
     #print(sample_step_data.shape)
     
