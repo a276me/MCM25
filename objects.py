@@ -1,7 +1,7 @@
 from monte_carlo import gaussian_2d, uniform_2d
 from main import ModelI
 class Material:
-    def __init__(self, wearing_coefficient, hardness, sliding_distance):
+    def __init__(self, wearing_coefficient, hardness, sliding_distance, diffusion_ratio):
         # product of the unit is 1/kPa
         self.wearing_coefficient = wearing_coefficient
         self.hardness = hardness
@@ -9,6 +9,8 @@ class Material:
         self.sliding_distance = sliding_distance
         # unit: m^3/N ~ cm/kPa
         self.step_erosion_coefficient = sliding_distance * wearing_coefficient / hardness
+        # ratio of diffusion of liquid to diffusion of stairs, unit: 1
+        self.diffusion_ratio = diffusion_ratio
 
 class Stairs:
     def __init__(self, width, length, height, material: Material):
@@ -21,11 +23,9 @@ class Stairs:
         
 
 class Environment:
-    def __init__(self, weather_erosion_coefficient_per_rain, rain_frequency):
-        # amount of material eroded per rain, unit: cm^2
-        self.weather_erosion_coefficient_per_rain = weather_erosion_coefficient_per_rain
-        # number of rains in a year, unit: 1/year
-        self.rain_frequency = rain_frequency
+    def __init__(self, env_coef):
+        # diffusion of liquid that causes erosion
+        self.env_coef = env_coef
         
 
 class StairsUsage:
@@ -38,15 +38,11 @@ class StairsUsage:
 
 
 class SimulationSettings:
-    def __init__(self, total_time, environment: Environment, stairs: Stairs, stairs_usage: StairsUsage):
+    def __init__(self, total_time, environment: Environment, stairs: Stairs, stairs_usage: StairsUsage, dt):
         # number of iterations, unit: 1
-        self.iterations = int(total_time*environment.rain_frequency)
-        # duration of a iteration, unit: year
-        self.period = 1/environment.rain_frequency
+        self.iterations = int(total_time/dt)
         # total length of durations, unit: year
         self.total_time = total_time
-        # how many number of steps are stepped onto the stairs when a rainfall happens on average
-        self.steps_per_rain = environment.rain_frequency/stairs_usage.frequency
         # total number of steps ever stepped onto this stair, unit: 1
         self.total_steps = stairs_usage.frequency * total_time
         
@@ -56,7 +52,7 @@ class SimulationSettings:
         self.beta = stairs.material.step_erosion_coefficient * stairs_usage.frequency
         
         # alpha coefficient in diff eq, unit: (cm^2/year)
-        self.alpha = environment.weather_erosion_coefficient_per_rain * environment.rain_frequency
+        self.alpha = environment.env_coef * stairs.material.diffusion_ratio
         
         self.environment = environment
         self.stairs = stairs
@@ -67,8 +63,8 @@ class SimulationSettings:
                             beta=self.beta,
                             direction=stairs_usage.direction_percentage,
                             distribution=stairs_usage.distribution,
-                            steps_per_dt=self.steps_per_rain,
-                            dt=self.period)
+                            step_frequency=stairs_usage.frequency,
+                            dt=dt)
         
         self.simulation = self.model.run_simulation(self.iterations)
         self.final_shape = self.simulation[self.iterations-1]
