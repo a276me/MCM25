@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from findiff import FinDiff
+from matplotlib.animation import FuncAnimation
 
 import monte_carlo as mc
 
@@ -39,7 +40,7 @@ def derivatives(f, h=1):
 
 class ModelI:
 
-    def __init__(self, alpha=1, beta=0.1, stair_dim=(200, 50, 30), direction=1, distribution=mc.gaussian_2d, step_frequency=5, dt=0.1, randomize_per_dt=1, **kwargs):
+    def __init__(self, alpha=1, beta=0.1, stair_dim=(200, 50, 30), direction=1, distribution=mc.gaussian_2d, step_frequency=5, dt=0.1, randomize_per_dt=10, **kwargs):
         self.alpha = alpha
         self.beta = beta
         self.stair_width, self.stair_length, self.q = stair_dim
@@ -65,8 +66,8 @@ class ModelI:
         
         if self.dt_till_random <= 0:
             self.force_map = np.zeros((self.Nx, self.Ny))
-            self.force_map[:,self.stair_length:2*self.stair_length] = mc.monte_carlo(self.Nx,
-                                    self.Ny, 20, self.direction, self.distribution) / 20
+            self.force_map[:,self.stair_length:2*self.stair_length] = mc.monte_carlo(self.stair_width,
+                                    self.stair_length, 20, self.direction, self.distribution) / 20
             self.dt_till_random = self.randomize_per_dt
  
         du = self.alpha * self.renormal_func(laplacian(self.u, self.dx, self.dy)) - self.beta * self.force_map * self.step_frequency
@@ -119,15 +120,31 @@ class ModelI:
 if __name__ == '__main__':
 
     model = ModelI()
-    data, X, Y = model.run_simulation(1000)[-1]
+    DATA = model.run_simulation(1000)
 
     fig = plt.figure(figsize=(8, 6))
     ax = fig.add_subplot(111, projection='3d')
+    
+    # Plot the initial surface
+    surface = ax.plot_surface(DATA[0][1], DATA[0][2], DATA[0][0], cmap='viridis', edgecolor='none')
 
-    # Plot the surface
-    surface = ax.plot_surface(X, Y, data, cmap='viridis', edgecolor='none')
+    # Add labels
+    ax.set_title('3D Animated Surface', fontsize=16)
+    ax.set_xlabel('X-axis')
+    ax.set_ylabel('Y-axis')
+    ax.set_zlabel('Z-axis')
 
-    # Show the plot
+    # Function to update the surface for animation
+    def update(frame):
+        global surface
+        # Clear the previous surface
+        surface.remove()
+        surface = ax.plot_surface(DATA[frame][1], DATA[frame][2], DATA[frame][0], cmap='viridis', edgecolor='none')
+
+    # Create animation
+    ani = FuncAnimation(fig, update, frames=100, interval=50)
+
+    # Show the animation
     plt.show()
 
     # # Parameters
