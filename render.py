@@ -2,6 +2,7 @@ from DataExtract.extract_stairs_data import sample_stairs_data as original
 from DataExtract.extract_stairs_data import plot_matrix, plot_matrix_3d
 import main
 from objects import SimulationSettings, StairsUsage, Stairs, Material, Environment
+import sliding_distance as sd
 
 def heightmap_to_obj(heightmap, output_path, cell_size=0.01):
     """
@@ -159,7 +160,7 @@ def render(matrix,output=False):
         print(f"OBJ file saved to: {output_file}")
     
 if __name__ == "__main__":
-    model = SimulationSettings()
-    render(model.sim)
+    model = SimulationSettings(1, Environment(1, 1), Stairs(200, 50, 50, Material(1, sd.H_rubber_kPa, sd.sliding_distance)), StairsUsage(1, 1, False))
+    render(model.final_shape[0])
     
 

@@ -104,25 +104,7 @@ def process_footprint(grid, step_points, direction, upward, downward, foot_lengt
 
     return grid
 
-
-
-#current assume cm
-stair_width = 200
-stair_length = 50 
-stair_height = 50
-
-human_width = 50
-foot_length = 27
-
-
-size = np.array((stair_width, stair_length))
-
-
-# We will assume that a single person prefers to walk either in the center
-# Or to the sides of the stairs
-
-
-def monte_carlo(stair_width, stair_height, iterations, upward_percentage, distribution_type=gaussian_2d):
+def monte_carlo(stair_width, stair_length, iterations, upward_percentage, distribution_type=gaussian_2d):
 
     percentages = [upward_percentage, 1 - upward_percentage]
     
@@ -148,7 +130,12 @@ def monte_carlo(stair_width, stair_height, iterations, upward_percentage, distri
     (0, 1): 20
     }
 
-    base_grid = distribution_type(size, (stair_width / 2, stair_height / 2), human_width, foot_length)
+    size = np.array((stair_width, stair_length))
+
+    human_width = 50
+    foot_length = 27
+
+    base_grid = distribution_type(size, (stair_width / 2, stair_length / 2), human_width, foot_length)
 
     # Initialize heatmap grid
     heatmap_grid = np.zeros_like(base_grid)
@@ -170,7 +157,7 @@ if __name__ == '__main__':
     # Run the Monte Carlo simulation
     fig = plt.figure(figsize=(10, 6))
     ax = fig.add_subplot(111, projection='3d')  # 3D plot
-    z = monte_carlo(stair_width, stair_height, 10000, 0, distribution_type=uniform_2d)
+    z = monte_carlo(200, 50, 10000, 0, distribution_type=uniform_2d)
     surf = ax.plot_surface(np.arange(z.shape[1]), np.arange(z.shape[0])[:, None], z, cmap="viridis")
 
     # Add color bar and labels

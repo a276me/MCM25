@@ -5,7 +5,7 @@ class Material:
         # product of the unit is 1/kPa
         self.wearing_coefficient = wearing_coefficient
         self.hardness = hardness
-        # unit: mc
+        # unit: cm
         self.sliding_distance = sliding_distance
         # unit: m^3/N ~ cm/kPa
         self.step_erosion_coefficient = sliding_distance * wearing_coefficient / hardness
@@ -71,6 +71,4 @@ class SimulationSettings:
                             dt=self.period)
         
         self.simulation = self.model.run_simulation(self.iterations)
-        self.final_shape = self.simulation[self.iteration-1]
-
-
+        self.final_shape = self.simulation[self.iterations-1]
