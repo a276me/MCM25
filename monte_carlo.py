@@ -7,53 +7,78 @@ import foot
 def uniform_2d(size, center, sigma_x, sigma_y):
     return np.ones((size[1], size[0])) # Uniform distribution
 
-def multi_modal_2d(size, center, sigma_x, sigma_y):
+def multi_modal_2d(size, center, sigma_x, sigma_y, human_width, n_peak):
     width, height = size
     centers = []
     left_edge = 30 
     right_edge = width - 30
     middle = width // 2  
 
-    current_x = left_edge
-    while current_x < middle:
-        centers.append((current_x, height // 2))
-        current_x += 60
+    n_max = width / human_width  # Maximum number of peaks allowed
 
-    current_x = right_edge
-    while current_x > middle:
-        centers.append((current_x, height // 2))
-        current_x -= 60
+    if n_peak * 2 > n_max:
+        # Original code for generating peaks when n_peak is too large
+        current_x = left_edge
+        while current_x < middle:
+            centers.append((current_x, height // 2))
+            current_x += 60
 
-    adjusted_sigma_x = sigma_x * 0.75  # 比原sigma_x更小，避免峰间重叠
+        current_x = right_edge
+        while current_x > middle:
+            centers.append((current_x, height // 2))
+            current_x -= 60
+    else:
+        # Generate n_peak peaks on both left and right sides
+        # Left side peaks (from left_edge towards middle)
+        left_centers = []
+        for i in range(n_peak):
+            cx = left_edge + i * human_width
+            left_centers.append((cx, height // 2))
+        
+        # Right side peaks (from right_edge towards middle)
+        right_centers = []
+        for i in range(n_peak):
+            cx = right_edge - i * human_width
+            right_centers.append((cx, height // 2))
 
-    # 叠加所有高斯分布
+        # Calculate the average x-coordinate of left and right peaks
+        left_avg_x = np.mean([cx for cx, cy in left_centers])
+        right_avg_x = np.mean([cx for cx, cy in right_centers])
+
+        # Desired average positions: 1/3 and 2/3 of the width
+        desired_left_avg = width / 3
+        desired_right_avg = 2 * width / 3
+
+        # Compute the shift needed for left and right peaks
+        left_shift = desired_left_avg - left_avg_x
+        right_shift = desired_right_avg - right_avg_x
+
+        # Shift all left and right peaks
+        left_centers = [(cx + left_shift, cy) for cx, cy in left_centers]
+        right_centers = [(cx + right_shift, cy) for cx, cy in right_centers]
+
+        # Combine left and right centers
+        centers = left_centers + right_centers
+
+    # Generate Gaussian distributions for all peaks
     distribution = np.zeros((height, width))
     for cx, cy in centers:
-        # 计算当前峰距离边缘的位置
-        distance_from_edge = min(abs(cx - left_edge), abs(cx - right_edge))  # 距离最近边缘的距离
-        max_distance = middle - left_edge  # 最大距离（从边缘到中间）
-
-        # 强度从两侧的1.0逐渐减小到中间的0.1
-        strength = 1.0 - (distance_from_edge / max_distance) * 0.9
-        # strength = max(strength, 0.3)  # 最小强度为0.1
-
-        # 生成高斯分布并叠加
-        middle_gauss = gaussian_2d(size, (cx, cy), adjusted_sigma_x, sigma_y) * strength
+        distance_from_edge = min(abs(cx - left_edge), abs(cx - right_edge)) 
+        max_distance = middle - left_edge  
+        strength = 1.0 - (distance_from_edge / max_distance) * 0.9  # Strength decreases near edges
+        middle_gauss = gaussian_2d(size, (cx, cy), sigma_x, sigma_y) * strength
         distribution += middle_gauss
 
-    # 对中间区域进行调整
-    blend_width = 50  # 渐变区域宽度
+    # Blend near the middle for smooth transition
+    blend_width = 50  
     for x in range(width):
-        # 计算距离中间的距离
         dist_from_middle = abs(x - middle)
         if dist_from_middle < blend_width:
-            # 混合权重：距离中间越近，中间分布的权重越高
             blend_weight = 1.0 - (dist_from_middle / blend_width)
             distribution[:, x] = (1 - blend_weight) * distribution[:, x] + blend_weight * middle_gauss[:, x]
 
+    # Normalize the distribution
     distribution = (distribution - distribution.min()) / (distribution.max() - distribution.min())
-    distribution += gaussian_2d(size, (middle, height // 2), adjusted_sigma_x, sigma_y) * 0.6
-
 
     return distribution
 
@@ -154,7 +179,7 @@ def process_footprint(grid, step_points, direction, upward, downward, foot_lengt
 
     return grid
 
-def monte_carlo(stair_width, stair_length, iterations, upward_percentage, distribution_type=gaussian_2d):
+def monte_carlo(stair_width, stair_length, iterations, upward_percentage, number_percentage, n_peak):
 
     # if stair_width <= 100:
     #     distribution_type = gaussian_2d
@@ -190,7 +215,8 @@ def monte_carlo(stair_width, stair_length, iterations, upward_percentage, distri
     human_width = 50
     foot_length = 27
 
-    base_grid = distribution_type(size, (stair_width / 2, stair_length / 2), human_width, foot_length)
+    base_grid = multi_modal_2d(size, (stair_width / 2, stair_length / 2), human_width, foot_length, human_width, n_peak) * (1 - number_percentage)
+    base_grid += gaussian_2d(size, (stair_width / 2, stair_length / 2), human_width, foot_length) * number_percentage
 
     # Initialize heatmap grid
     heatmap_grid = np.zeros_like(base_grid)
@@ -208,13 +234,16 @@ def monte_carlo(stair_width, stair_length, iterations, upward_percentage, distri
     return base_grid, z  # Return both the initial distribution and the final heatmap
 
 if __name__ == '__main__':
-    stair_width = 300
+    stair_width = 500
     stair_length = 50
     iterations = 10000
     upward_percentage = 0.5
+    number_percentage = 0 # Percentage of gaussian-modal distribution
+    n_peak = 6
+
 
     # Get the initial distribution and final heatmap
-    base_grid, z = monte_carlo(stair_width, stair_length, iterations, upward_percentage, distribution_type=multi_modal_2d)
+    base_grid, z = monte_carlo(stair_width, stair_length, iterations, upward_percentage, number_percentage, n_peak)
 
     # Plot the initial distribution
     plt.figure(figsize=(10, 6))
