@@ -15,19 +15,6 @@ import monte_carlo as mc
 
 
 # Boundary condition functions
-def boundary_conditions(u, q):
-    # Apply custom boundary conditions
-    # u[0, :] = u[1, :]  # Zero flux at x = 0
-    # u[-1, :] = u[-2, :]  # Zero flux at x = max
-    # u[:, 0] = u[:, 1] #+ q * dy  # Constant flux at y = 0
-    # u[:, -1] = u[:, -2] #- q * dy  # Constant flux at y = max
-
-    u[0, :] = u[1, :]  # Zero flux at x = 0 
-    u[-1, :] = u[-2, :]  # Zero flux at x = max 
-    u[:, 0] = 0
-    u[:, -1] = 3*q
-
-    return u
 
 def laplacian(u, dx, dy):
     laplacian = np.zeros_like(u)
@@ -48,88 +35,41 @@ def derivatives(f, h=1):
     df_dx = d_dx(f)
     df_dy = d_dy(f)
 
-    return np.array([df_dx, df_dy])
-
-def update_grid(u, alpha, beta, stair_dim, dt, direction, distribution, steps_per_dt):
-    
-    stair_width, stair_height, q = stair_dim
-
-    force_map = np.zeros((Nx, Ny))
-    force_map[:, stair_length:2*stair_length] = mc.monte_carlo(stair_width, stair_length, steps_per_dt, direction, distribution)
-    
-    du = alpha * laplacian(u, dx, dy) - beta * force_map
-
-    # du = -alpha * np.sqrt((derivatives(u)**2).sum()) - beta * force_map
-
-    du = du*dt
-    u_new = u + du
-    u = boundary_conditions(u_new, q)
-    return u
-
-def update(frame):
-    global u, force_map
-
-    for i in range(5):
-        u = update_grid(u)
-    
-    force_map = force_map
-
-    X, Y = np.meshgrid(np.linspace(0, Lx, Nx), np.linspace(0, Ly, Ny))
-    ax.clear()
-    ax.plot_surface(X, Y, np.transpose(u), cmap='viridis', edgecolor='none')
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-    ax.set_zlabel('Temperature')
-    return [ax]
-
-def run_simulation(stair_dim, iterations, dt, direction, distribution, steps_per_dt, **args):
-    
-    stair_width, stair_height, stair_length = stair_dim
-
-    Lx, Ly = stair_width, stair_length * 3 # Domain size
-    Nx, Ny = int(Lx), int(Ly)    # Number of grid points
-
-    alpha = 0.0001  # Weather Errosion
-    beta = 0.1      # Step Errosion coefficient
-
-    u = np.zeros((Nx, Ny))
-    force_map = np.zeros((Nx, Ny))
-
-    saves = np.zeros(shape=(iterations, u.shape[0], u.shape[1]))
-
-    for i in range(3): 
-        u[:,stair_length*i:stair_length*(i+1)] = stair_height*i
-    
-    for i in range(iterations):
-        saves[i] = u
-        u = update_grid(u,alpha, beta, stair_dim, dt, direction, distribution, steps_per_dt)
-        print(f'simulated {i}/{iterations}')
-        
+    return np.array([df_dx, df_dy])    
 
 class ModelI:
 
-    def __init__(self, alpha=1, beta=0.1, stair_dim=(200, 50, 30), direction=1, distribution=mc.gaussian_2d, steps_per_dt=5, dt=0.1, **kwargs):
+    def __init__(self, alpha=1, beta=0.1, stair_dim=(200, 50, 30), direction=1, distribution=mc.gaussian_2d, step_frequency=5, dt=0.1, randomize_per_dt=1, **kwargs):
         self.alpha = alpha
         self.beta = beta
         self.stair_width, self.stair_length, self.q = stair_dim
         self.dx = 1 
         self.dy = 1 
         self.dt = dt
-        self.steps_per_dt = steps_per_dt
+        self.step_frequency = step_frequency
         self.direction = direction
         self.distribution = distribution
+        self.randomize_per_dt = randomize_per_dt
+        self.dt_till_random = 0
+    
+    def renormal_func(self, u):
+        return u*np.exp(-0.1*(u**2))
 
     def update_grid(self,):
-        force_map = np.zeros((self.Nx, self.Ny))
+        
         # print(force_map.shape)
         # print(self.u.shape)
         #print(laplacian(self.u, self.dx, self.dy).std())
         # force_map[:, self.stair_length:2*self.stair_length] = mc.monte_carlo(self.stair_width,
         #                                                      self.stair_length, self.steps_per_dt, self.direction, self.distribution)
-        force_map[:,self.stair_length:2*self.stair_length] = mc.monte_carlo(self.Nx,
-                                    self.Ny, self.steps_per_dt, self.direction, self.distribution)
+        
+        if self.dt_till_random <= 0:
+            self.force_map = np.zeros((self.Nx, self.Ny))
+            self.force_map[:,self.stair_length:2*self.stair_length] = mc.monte_carlo(self.Nx,
+                                    self.Ny, 20, self.direction, self.distribution) / 20
+            self.dt_till_random = self.randomize_per_dt
  
-        du = (self.alpha * laplacian(self.u, self.dx, self.dy)*np.exp(-0.1*laplacian(self.u, self.dx, self.dy)**2)) - self.beta * force_map
+        du = self.alpha * self.renormal_func(laplacian(self.u, self.dx, self.dy)) - self.beta * self.force_map * self.step_frequency
 
         # du = -alpha * np.sqrt((derivatives(u)**2).sum()) - beta * force_map
 
@@ -179,7 +119,16 @@ class ModelI:
 if __name__ == '__main__':
 
     model = ModelI()
-    model.run_simulation(1000)
+    data, X, Y = model.run_simulation(1000)[-1]
+
+    fig = plt.figure(figsize=(8, 6))
+    ax = fig.add_subplot(111, projection='3d')
+
+    # Plot the surface
+    surface = ax.plot_surface(X, Y, data, cmap='viridis', edgecolor='none')
+
+    # Show the plot
+    plt.show()
 
     # # Parameters
     # stair_width = 200
