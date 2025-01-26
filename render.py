@@ -151,6 +151,31 @@ def heightmap_to_obj(heightmap, output_path, cell_size=0.01):
             # Face is (v1, v2, v3) -> "f v1 v2 v3"
             f.write("f {} {} {}\n".format(*face))
 
+def plot_matrix(matrix):
+    plt.imshow(matrix, cmap='viridis', aspect='auto')
+    plt.colorbar(label='Value')
+    plt.title('Matrix Heatmap')
+    plt.xlabel('Column Index')
+    plt.ylabel('Row Index')
+    plt.show()
+
+def plot_matrix_3d(matrix):
+
+    # Create the plot
+    fig = plt.figure(figsize=(8, 6))
+    ax = fig.add_subplot(111, projection='3d')
+
+    # Plot the surface
+    ax.plot_surface(matrix[1],matrix[2],matrix[0], cmap='viridis')
+
+    # Set labels
+    ax.set_xlabel('Column Index')
+    ax.set_ylabel('Row Index')
+    ax.set_zlabel('Height')
+
+    # Show the plot
+    plt.show()
+
 def render(matrix,output=False):
     #plot_matrix(matrix)
     plot_matrix_3d(matrix)
@@ -161,6 +186,6 @@ def render(matrix,output=False):
     
 if __name__ == "__main__":
     model = SimulationSettings(1, Environment(1, 1), Stairs(200, 50, 50, Material(1, sd.H_rubber_kPa, sd.sliding_distance)), StairsUsage(1, 1, False))
-    render(model.final_shape[0])
+    render(model.final_shape[0,0])
     
 

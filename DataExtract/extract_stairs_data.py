@@ -1,7 +1,7 @@
 # cell size: 0.005m
 
+from matplotlib import pyplot as plt
 import numpy as np
-import matplotlib.pyplot as plt
 
 # Read the data from the text file into a matrix
 
@@ -12,33 +12,14 @@ def read_matrix_from_txt(file_path):
     return np.array(matrix)
 
 # Plot the matrix as a heatmap
-
-
 def plot_matrix(matrix):
-    plt.imshow(matrix, cmap='viridis', aspect='auto')
+    plt.imshow(matrix, cmap='viridis', aspect='equal')
     plt.colorbar(label='Value')
     plt.title('Matrix Heatmap')
     plt.xlabel('Column Index')
     plt.ylabel('Row Index')
+    
     plt.show()
-
-def plot_matrix_3d(matrix):
-
-    # Create the plot
-    fig = plt.figure(figsize=(8, 6))
-    ax = fig.add_subplot(111, projection='3d')
-
-    # Plot the surface
-    ax.plot_surface(matrix[1],matrix[2],matrix[0], cmap='viridis')
-
-    # Set labels
-    ax.set_xlabel('Column Index')
-    ax.set_ylabel('Row Index')
-    ax.set_zlabel('Height')
-
-    # Show the plot
-    plt.show()
-
 
 def replace_zeros_with_neighbors(matrix):
     """Replaces zeros in the matrix with the average of surrounding non-zero elements."""
@@ -63,13 +44,96 @@ def replace_zeros_with_neighbors(matrix):
 
     return new_matrix
 
+def subtract_plane(data):
+    """
+    Subtracts a best-fit plane from a 2D array of height data.
+    
+    Parameters
+    ----------
+    data : 2D numpy.ndarray
+        A 2D array of height values, shape (rows, cols).
+    
+    Returns
+    -------
+    data_subtracted : 2D numpy.ndarray
+        The original data with the best-fit plane subtracted.
+    """
+    # Get the shape of the input data
+    rows, cols = data.shape
+    
+    # Create a coordinate grid
+    # Y will vary from 0 to rows-1 (down the rows),
+    # X will vary from 0 to cols-1 (across the columns).
+    Y, X = np.mgrid[:rows, :cols]
+    
+    # Flatten the coordinates and data for fitting
+    X_flat = X.ravel()
+    Y_flat = Y.ravel()
+    Z_flat = data.ravel()
+    
+    # Build the design matrix G where each row is [x, y, 1].
+    # This corresponds to fitting the model z = a*x + b*y + c
+    G = np.column_stack((X_flat, Y_flat, np.ones_like(X_flat)))
+    
+    # Solve for the least-squares fit of the plane coefficients (a, b, c)
+    # using numpy.linalg.lstsq
+    (a, b, c), residuals, rank, s = np.linalg.lstsq(G, Z_flat, rcond=None)
+    
+    # Construct the fitted plane for each point in the 2D grid
+    plane = a * X + b * Y + c
+    
+    # Subtract the fitted plane from the original data
+    data_subtracted = data - plane
+    
+    return data_subtracted
+
+def plot_contours(data, n_levels=10):
+    """
+    Plots contour lines of a 2D NumPy array.
+    
+    Parameters
+    ----------
+    data : 2D numpy.ndarray
+        A 2D array of height values, shape (rows, cols).
+    n_levels : int
+        Number of contour levels to plot.
+    """
+    rows, cols = data.shape
+    
+    # Create a coordinate grid
+    Y, X = np.mgrid[:rows, :cols]
+    
+    # Create a figure and axis
+    fig, ax = plt.subplots()
+    
+    # Create contour lines
+    # You can use contourf for filled contours, or contour for just contour lines
+    contour = ax.contour(X, Y, data, levels=n_levels, cmap='viridis')
+    
+    # Optional: label the contour lines
+    ax.clabel(contour, inline=True, fontsize=8)
+    
+    # Add a color bar
+    plt.colorbar(contour, ax=ax)
+    
+    # Label axes
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_title('Contour Plot of 2D Data')
+    ax.set_aspect('equal')
+    # Show the plot
+    plt.show()
 
 file_path = 'DataExtract/stairs_data.txt'
 data = read_matrix_from_txt(file_path)
-data = data[10:270]
+data = data[10:270,1:681]
+print(data.shape)
+data.reshape(130, 2, 340, 2).mean(axis=(1,3))
 sample_stairs_data = replace_zeros_with_neighbors(data)
+sample_step_data =sample_stairs_data[79:140]
+sample_step_data = subtract_plane(sample_step_data)
 
 if __name__ == "__main__":
     #plot_matrix(sample_stairs_data[85:135])
-    plot_matrix(sample_stairs_data)
-    plot_matrix_3d(sample_stairs_data)
+    plot_matrix(sample_step_data)
+    plot_contours(sample_step_data)
