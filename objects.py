@@ -23,18 +23,17 @@ class Stairs:
         
 
 class Environment:
-    def __init__(self, env_coef):
-        # diffusion of liquid that causes erosion
+    def __init__(self, env_coef=722):
+        # diffusion of liquid that causes erosion, approx 722 cm^2 / year for water
         self.env_coef = env_coef
         
 
 class StairsUsage:
-    def __init__(self, frequency, direction_percentage, is_paired):
+    def __init__(self, frequency, direction_percentage, peaks):
         # the total number of steps in a year, unit: 1/year
         self.frequency = frequency
         self.direction_percentage = direction_percentage
-        self.is_paired = is_paired
-        self.distribution = uniform_2d if is_paired else gaussian_2d
+        self.peaks = peaks
 
 
 class SimulationSettings:
@@ -62,7 +61,7 @@ class SimulationSettings:
                             alpha=self.alpha,
                             beta=self.beta,
                             direction=stairs_usage.direction_percentage,
-                            distribution=stairs_usage.distribution,
+                            n_peaks=stairs_usage.peaks,
                             step_frequency=stairs_usage.frequency,
                             dt=dt)
         

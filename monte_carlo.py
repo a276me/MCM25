@@ -318,14 +318,14 @@ def monte_carlo(stair_width, stair_length, iterations, upward_percentage, n):
 if __name__ == '__main__':
     stair_width = 300
     stair_length = 50
-    iterations = 500
+    iterations = 1000
     upward_percentage = 0.5
     # number_percentage = 0 # Percentage of gaussian-modal distribution
     n_peak = 2
     # Get the initial distribution and final heatmap
     t1 = time.time()
     z = monte_carlo(stair_width, stair_length, iterations, upward_percentage, n_peak)
-    print("Time taken: ", (time.time() - t1) / (iterations / n_peak), " minutes")
+    print("Time taken: ", (time.time() - t1), " sec")
 
     # Plot the final heatmap
     fig = plt.figure(figsize=(10, 6))

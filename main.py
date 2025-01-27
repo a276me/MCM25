@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from findiff import FinDiff
 from matplotlib.animation import FuncAnimation
+import random
 
 import monte_carlo as mc
 
@@ -40,7 +41,7 @@ def derivatives(f, h=1):
 
 class ModelI:
 
-    def __init__(self, alpha=1, beta=0.1, stair_dim=(200, 50, 30), direction=1, distribution=mc.gaussian_2d, step_frequency=5, dt=0.1, randomize_per_dt=10, **kwargs):
+    def __init__(self, alpha=1, beta=0.1, stair_dim=(200, 50, 30), direction=1, n_peaks=2, step_frequency=5, dt=0.1, randomize_per_dt=5, **kwargs):
         self.alpha = alpha
         self.beta = beta
         self.stair_width, self.stair_length, self.q = stair_dim
@@ -49,12 +50,12 @@ class ModelI:
         self.dt = dt
         self.step_frequency = step_frequency
         self.direction = direction
-        self.distribution = distribution
+        self.peaks = n_peaks
         self.randomize_per_dt = randomize_per_dt
         self.dt_till_random = 0
     
     def renormal_func(self, u):
-        return u*np.exp(-0.1*(u**2))
+        return u*np.exp(-1*(0.1*u)**2)
 
     def update_grid(self,):
         
@@ -67,17 +68,19 @@ class ModelI:
         if self.dt_till_random <= 0:
             self.force_map = np.zeros((self.Nx, self.Ny))
             self.force_map[:,self.stair_length:2*self.stair_length] = mc.monte_carlo(self.stair_width,
-                                    self.stair_length, 20, self.direction, self.distribution) / 20
+                                    self.stair_length, 500, self.direction, self.peaks) / 500
+            # self.force_map += 0.1*np.random.rand(self.Nx, self.Ny)
             self.dt_till_random = self.randomize_per_dt
  
         du = self.alpha * self.renormal_func(laplacian(self.u, self.dx, self.dy)) - self.beta * self.force_map * self.step_frequency
-
+        #du += 0.01*np.random.rand(self.Nx, self.Ny)
         # du = -alpha * np.sqrt((derivatives(u)**2).sum()) - beta * force_map
 
         du = du*self.dt
         self.u = self.u + du
 
         self.apply_boundary_conditions()
+        self.dt_till_random -= 1
         
     def apply_boundary_conditions(self,):
         # Apply custom boundary conditions
@@ -93,6 +96,8 @@ class ModelI:
 
 
     def run_simulation(self, iterations, save=False, save_file='./DiffEqSim/sim.npy'):
+
+        self.randomize_per_dt = int(iterations / 10)
 
         self.Lx, self.Ly = self.stair_width, self.stair_length*3 # Domain size
         self.Nx, self.Ny = int(self.Lx), int(self.Ly) 
@@ -119,8 +124,8 @@ class ModelI:
 
 if __name__ == '__main__':
 
-    model = ModelI()
-    DATA = model.run_simulation(1000)
+    model = ModelI(step_frequency=10)
+    DATA = model.run_simulation(10000)
 
     fig = plt.figure(figsize=(8, 6))
     ax = fig.add_subplot(111, projection='3d')

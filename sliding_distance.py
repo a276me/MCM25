@@ -9,6 +9,7 @@ A_full = 2000  # Full foot contact area (mm²)
 F = 70 * 9.81  # Normal load (N)
 H_rubber = 6.87  # Hardness of rubber sole (N/mm²)
 H_rubber_kPa = H_rubber * 1000  # Hardness of rubber sole (kPa)
+H_limestone_kPa = 2452000
 H_eva = 4.91  # Hardness of EVA sole (N/mm²)
 k_dry = 3e-4  # Wear coefficient (dry conditions)
 k_wet = 7e-4  # Wear coefficient (wet conditions)
