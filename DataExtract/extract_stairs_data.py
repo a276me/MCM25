@@ -13,7 +13,7 @@ def read_matrix_from_txt(file_path):
 
 # Plot the matrix as a heatmap
 def plot_matrix(matrix):
-    plt.imshow(matrix, cmap='viridis', aspect='equal')
+    plt.imshow(matrix.T, cmap='viridis', aspect='equal')
     plt.colorbar(label='Value')
     plt.title('Matrix Heatmap')
     plt.xlabel('Column Index')
@@ -172,11 +172,11 @@ data = read_matrix_from_txt(file_path)
 data = data[5:136,1:341]
 
 sample_stairs_data = replace_zeros_with_neighbors(data)*100
-sample_step_data =sample_stairs_data[40:70]
+sample_step_data = sample_stairs_data[40:70]
 sample_step_data = sample_step_data[::-1]
 sample_step_data = subtract_plane(sample_step_data)
 #sample_step_data = subtract_linear_fit(sample_step_data)
-sample_stairs_dimension = (30,340,12)
+sample_stairs_dimension = (340,30,12)
 
 if __name__ == "__main__":
     #plot_matrix(sample_stairs_data[85:135])
