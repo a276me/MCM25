@@ -147,7 +147,7 @@ if __name__ == '__main__':
         surface = ax.plot_surface(DATA[frame][1], DATA[frame][2], DATA[frame][0], cmap='viridis', edgecolor='none')
 
     # Create animation
-    ani = FuncAnimation(fig, update, frames=100, interval=50)
+    ani = FuncAnimation(fig, update, frames=10000, interval=50)
 
     # Show the animation
     plt.show()
